@@ -19,6 +19,7 @@ This is [Langfuse](https://langfuse.com)'s **unofficial** Go client, designed to
 | Span | 🟢 |
 | Event | 🟢 |
 | Score | 🟢 |
+| Prompt (retrieve) | 🟢 |
 
 
 
@@ -51,14 +52,15 @@ Here below a simple usage example:
 package main
 
 import (
-	"context"
+        "context"
+        "fmt"
 
-	"github.com/henomis/langfuse-go"
-	"github.com/henomis/langfuse-go/model"
+        "github.com/henomis/langfuse-go"
+        "github.com/henomis/langfuse-go/model"
 )
 
 func main() {
-	l := langfuse.New()
+        l := langfuse.New()
 
 	err := l.Trace(&model.Trace{Name: "test-trace"})
 	if err != nil {
@@ -136,10 +138,17 @@ func main() {
 		panic(err)
 	}
 
-	err = l.SpanEnd(&model.Span{})
-	if err != nil {
-		panic(err)
-	}
+        err = l.SpanEnd(&model.Span{})
+        if err != nil {
+                panic(err)
+        }
+
+        prompt, err := l.Prompt(context.Background(), "my-prompt", &model.PromptRequestOptions{Label: "latest"})
+        if err != nil {
+                panic(err)
+        }
+
+        fmt.Printf("Retrieved prompt version %d with label %s\n", prompt.Version, prompt.Label)
 
 	l.Flush(context.Background())
 
