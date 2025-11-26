@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/henomis/langfuse-go/model"
+	"github.com/ezardev-team/langfuse-go/model"
 	"github.com/henomis/restclientgo"
 )
 

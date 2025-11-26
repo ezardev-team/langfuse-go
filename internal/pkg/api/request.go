@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/henomis/langfuse-go/model"
+	"github.com/ezardev-team/langfuse-go/model"
 )
 
 const (

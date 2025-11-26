@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/ezardev-team/langfuse-go/internal/pkg/api"
+	"github.com/ezardev-team/langfuse-go/internal/pkg/observer"
+	"github.com/ezardev-team/langfuse-go/model"
 	"github.com/google/uuid"
-	"github.com/henomis/langfuse-go/internal/pkg/api"
-	"github.com/henomis/langfuse-go/internal/pkg/observer"
-	"github.com/henomis/langfuse-go/model"
 )
 
 const (
