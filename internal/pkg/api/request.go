@@ -51,19 +51,18 @@ func (p *PromptRequest) Path() (string, error) {
 
 	queryParams := url.Values{}
 
-	if p.Version != nil {
-		queryParams.Set("version", fmt.Sprintf("%d", *p.Version))
-	}
-
-	if p.Label != "" {
-		queryParams.Set("label", p.Label)
-	}
-
 	if p.Environment != "" {
 		queryParams.Set("environment", p.Environment)
 	}
 
 	path := "/api/public/prompts/" + url.PathEscape(p.Name)
+
+	switch {
+	case p.Version != nil:
+		path += fmt.Sprintf("/versions/%d", *p.Version)
+	case p.Label != "":
+		path += "/labels/" + url.PathEscape(p.Label)
+	}
 
 	if encodedQuery := queryParams.Encode(); encodedQuery != "" {
 		path += "?" + encodedQuery

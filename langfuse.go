@@ -3,6 +3,7 @@ package langfuse
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -219,17 +220,25 @@ func (l *Langfuse) Prompt(ctx context.Context, name string, options *model.Promp
 		req.Environment = options.Environment
 	}
 
+	path, err := req.Path()
+	if err != nil {
+		return nil, err
+	}
+
 	res := api.PromptResponse{}
 
-	err := l.client.Prompt(ctx, &req, &res)
+	err = l.client.Prompt(ctx, &req, &res)
 	if err != nil {
+		log.Printf("prompt request failed: %v (path=%s)", err, path)
 		return nil, err
 	}
 
 	if !res.IsSuccess() {
 		if res.RawBody != nil {
+			log.Printf("prompt request failed with status code: %d (path=%s) body=%s", res.Code, path, *res.RawBody)
 			return nil, fmt.Errorf("prompt request failed: %s", *res.RawBody)
 		}
+		log.Printf("prompt request failed with status code: %d (path=%s)", res.Code, path)
 		return nil, fmt.Errorf("prompt request failed with status code: %d", res.Code)
 	}
 
