@@ -3,7 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/henomis/langfuse-go/model"
 )
@@ -33,4 +35,46 @@ func (t *Ingestion) Encode() (io.Reader, error) {
 
 func (t *Ingestion) ContentType() string {
 	return ContentTypeJSON
+}
+
+type PromptRequest struct {
+	Name        string
+	Version     *int
+	Label       string
+	Environment string
+}
+
+func (p *PromptRequest) Path() (string, error) {
+	if p.Name == "" {
+		return "", fmt.Errorf("prompt name is required")
+	}
+
+	queryParams := url.Values{}
+
+	if p.Environment != "" {
+		queryParams.Set("environment", p.Environment)
+	}
+
+	path := "/api/public/prompts/" + url.PathEscape(p.Name)
+
+	switch {
+	case p.Version != nil:
+		path += fmt.Sprintf("/versions/%d", *p.Version)
+	case p.Label != "":
+		path += "/labels/" + url.PathEscape(p.Label)
+	}
+
+	if encodedQuery := queryParams.Encode(); encodedQuery != "" {
+		path += "?" + encodedQuery
+	}
+
+	return path, nil
+}
+
+func (p *PromptRequest) Encode() (io.Reader, error) {
+	return nil, nil
+}
+
+func (p *PromptRequest) ContentType() string {
+	return ""
 }
