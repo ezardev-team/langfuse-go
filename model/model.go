@@ -129,4 +129,23 @@ type Event struct {
 	ID                  string           `json:"id,omitempty"`
 }
 
+type Prompt struct {
+	ID          string     `json:"id,omitempty"`
+	Name        string     `json:"name,omitempty"`
+	Version     int        `json:"version,omitempty"`
+	Label       string     `json:"label,omitempty"`
+	Environment string     `json:"environment,omitempty"`
+	Prompt      any        `json:"prompt,omitempty"`
+	Config      any        `json:"config,omitempty"`
+	Metadata    any        `json:"metadata,omitempty"`
+	CreatedAt   *time.Time `json:"createdAt,omitempty"`
+	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
+}
+
+type PromptRequestOptions struct {
+	Version     *int
+	Label       string
+	Environment string
+}
+
 type M map[string]interface{}

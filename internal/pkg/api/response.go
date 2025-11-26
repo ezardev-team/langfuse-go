@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/henomis/langfuse-go/model"
 	"github.com/henomis/restclientgo"
 )
 
@@ -25,6 +26,12 @@ type Error struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
 	Error   string `json:"error"`
+}
+
+type PromptResponse struct {
+	Code    int          `json:"-"`
+	RawBody *string      `json:"-"`
+	Prompt  model.Prompt `json:"prompt"`
 }
 
 func (r *Response) IsSuccess() bool {
@@ -62,4 +69,37 @@ func (r *Response) SetHeaders(_ restclientgo.Headers) error {
 
 type IngestionResponse struct {
 	Response
+}
+
+func (r *PromptResponse) IsSuccess() bool {
+	return r.Code < http.StatusBadRequest
+}
+
+func (r *PromptResponse) SetStatusCode(code int) error {
+	r.Code = code
+	return nil
+}
+
+func (r *PromptResponse) SetBody(body io.Reader) error {
+	b, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	s := string(b)
+	r.RawBody = &s
+
+	return nil
+}
+
+func (r *PromptResponse) AcceptContentType() string {
+	return ContentTypeJSON
+}
+
+func (r *PromptResponse) Decode(body io.Reader) error {
+	return json.NewDecoder(body).Decode(r)
+}
+
+func (r *PromptResponse) SetHeaders(_ restclientgo.Headers) error {
+	return nil
 }

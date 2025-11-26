@@ -210,6 +210,32 @@ func (l *Langfuse) Event(e *model.Event, parentID *string) (*model.Event, error)
 	return e, nil
 }
 
+func (l *Langfuse) Prompt(ctx context.Context, name string, options *model.PromptRequestOptions) (*model.Prompt, error) {
+	req := api.PromptRequest{Name: name}
+
+	if options != nil {
+		req.Label = options.Label
+		req.Version = options.Version
+		req.Environment = options.Environment
+	}
+
+	res := api.PromptResponse{}
+
+	err := l.client.Prompt(ctx, &req, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	if !res.IsSuccess() {
+		if res.RawBody != nil {
+			return nil, fmt.Errorf("prompt request failed: %s", *res.RawBody)
+		}
+		return nil, fmt.Errorf("prompt request failed with status code: %d", res.Code)
+	}
+
+	return &res.Prompt, nil
+}
+
 func (l *Langfuse) createTrace(traceName string) (string, error) {
 	trace, errTrace := l.Trace(
 		&model.Trace{

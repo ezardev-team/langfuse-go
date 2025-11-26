@@ -41,6 +41,10 @@ func (c *Client) Ingestion(ctx context.Context, req *Ingestion, res *IngestionRe
 	return c.restClient.Post(ctx, req, res)
 }
 
+func (c *Client) Prompt(ctx context.Context, req *PromptRequest, res *PromptResponse) error {
+	return c.restClient.Get(ctx, req, res)
+}
+
 func basicAuth(publicKey, secretKey string) string {
 	auth := publicKey + ":" + secretKey
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
