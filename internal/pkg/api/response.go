@@ -29,9 +29,9 @@ type Error struct {
 }
 
 type PromptResponse struct {
-	Code    int          `json:"-"`
-	RawBody *string      `json:"-"`
-	Prompt  model.Prompt `json:"prompt"`
+	Code    int     `json:"-"`
+	RawBody *string `json:"-"`
+	Prompt  model.Prompt
 }
 
 func (r *Response) IsSuccess() bool {
@@ -97,9 +97,59 @@ func (r *PromptResponse) AcceptContentType() string {
 }
 
 func (r *PromptResponse) Decode(body io.Reader) error {
-	return json.NewDecoder(body).Decode(r)
+	rawBody, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	if r.RawBody == nil {
+		bodyString := string(rawBody)
+		r.RawBody = &bodyString
+	}
+
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(rawBody, &envelope); err != nil {
+		return err
+	}
+
+	// If the API returns the prompt object directly (id/name/label at the top
+	// level), decode straight into the prompt model to support prompt content
+	// being a plain string or structured payload.
+	if hasPromptMetadata(envelope) {
+		return json.Unmarshal(rawBody, &r.Prompt)
+	}
+
+	// Otherwise look for a nested prompt object.
+	if promptRaw, ok := envelope["prompt"]; ok {
+		return json.Unmarshal(promptRaw, &r.Prompt)
+	}
+
+	// Fallback: try to decode the entire body into the prompt.
+	return json.Unmarshal(rawBody, &r.Prompt)
 }
 
 func (r *PromptResponse) SetHeaders(_ restclientgo.Headers) error {
 	return nil
+}
+
+func hasPromptMetadata(envelope map[string]json.RawMessage) bool {
+	keys := []string{
+		"id",
+		"name",
+		"version",
+		"label",
+		"environment",
+		"config",
+		"metadata",
+		"createdAt",
+		"updatedAt",
+	}
+
+	for _, key := range keys {
+		if _, ok := envelope[key]; ok {
+			return true
+		}
+	}
+
+	return false
 }
