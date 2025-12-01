@@ -46,6 +46,21 @@ const (
 	ObservationLevelError   ObservationLevel = "ERROR"
 )
 
+type ObservationType string
+
+const (
+	ObservationTypeSpan       ObservationType = "SPAN"
+	ObservationTypeGeneration ObservationType = "GENERATION"
+	ObservationTypeEvent      ObservationType = "EVENT"
+	ObservationTypeAgent      ObservationType = "AGENT"
+	ObservationTypeTool       ObservationType = "TOOL"
+	ObservationTypeChain      ObservationType = "CHAIN"
+	ObservationTypeRetriever  ObservationType = "RETRIEVER"
+	ObservationTypeEvaluator  ObservationType = "EVALUATOR"
+	ObservationTypeEmbedding  ObservationType = "EMBEDDING"
+	ObservationTypeGuardrail  ObservationType = "GUARDRAIL"
+)
+
 type Generation struct {
 	TraceID             string           `json:"traceId,omitempty"`
 	Name                string           `json:"name,omitempty"`
@@ -127,6 +142,42 @@ type Event struct {
 	ParentObservationID string           `json:"parentObservationId,omitempty"`
 	Version             string           `json:"version,omitempty"`
 	ID                  string           `json:"id,omitempty"`
+}
+
+type ObservationView struct {
+	ID                  string             `json:"id"`
+	TraceID             string             `json:"traceId,omitempty"`
+	Type                ObservationType    `json:"type,omitempty"`
+	Name                string             `json:"name,omitempty"`
+	StartTime           *time.Time         `json:"startTime,omitempty"`
+	EndTime             *time.Time         `json:"endTime,omitempty"`
+	CompletionStartTime *time.Time         `json:"completionStartTime,omitempty"`
+	Model               string             `json:"model,omitempty"`
+	ModelParameters     any                `json:"modelParameters,omitempty"`
+	Input               any                `json:"input,omitempty"`
+	Version             string             `json:"version,omitempty"`
+	Metadata            any                `json:"metadata,omitempty"`
+	Output              any                `json:"output,omitempty"`
+	Usage               Usage              `json:"usage,omitempty"`
+	UsageDetails        map[string]int     `json:"usageDetails,omitempty"`
+	CostDetails         map[string]float64 `json:"costDetails,omitempty"`
+	Level               ObservationLevel   `json:"level,omitempty"`
+	StatusMessage       string             `json:"statusMessage,omitempty"`
+	ParentObservationID string             `json:"parentObservationId,omitempty"`
+	PromptName          string             `json:"promptName,omitempty"`
+	PromptVersion       int                `json:"promptVersion,omitempty"`
+	ModelID             string             `json:"modelId,omitempty"`
+	InputPrice          float64            `json:"inputPrice,omitempty"`
+	OutputPrice         float64            `json:"outputPrice,omitempty"`
+	TotalPrice          float64            `json:"totalPrice,omitempty"`
+	Environment         string             `json:"environment,omitempty"`
+}
+
+type PaginationMeta struct {
+	Page       int `json:"page"`
+	Limit      int `json:"limit"`
+	TotalItems int `json:"totalItems"`
+	TotalPages int `json:"totalPages"`
 }
 
 type Prompt struct {

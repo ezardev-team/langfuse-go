@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"time"
 
 	"github.com/ezardev-team/langfuse-go/model"
 )
@@ -35,6 +36,95 @@ func (t *Ingestion) Encode() (io.Reader, error) {
 
 func (t *Ingestion) ContentType() string {
 	return ContentTypeJSON
+}
+
+type ObservationsRequest struct {
+	Page                *int
+	Limit               *int
+	Name                string
+	UserID              string
+	Type                model.ObservationType
+	TraceID             string
+	Level               model.ObservationLevel
+	ParentObservationID string
+	Environment         []string
+	FromStartTime       *time.Time
+	ToStartTime         *time.Time
+	Version             string
+	Filter              string
+}
+
+func (o *ObservationsRequest) Path() (string, error) {
+	queryParams := url.Values{}
+
+	if o.Page != nil {
+		queryParams.Set("page", fmt.Sprintf("%d", *o.Page))
+	}
+
+	if o.Limit != nil {
+		queryParams.Set("limit", fmt.Sprintf("%d", *o.Limit))
+	}
+
+	if o.Name != "" {
+		queryParams.Set("name", o.Name)
+	}
+
+	if o.UserID != "" {
+		queryParams.Set("userId", o.UserID)
+	}
+
+	if o.Type != "" {
+		queryParams.Set("type", string(o.Type))
+	}
+
+	if o.TraceID != "" {
+		queryParams.Set("traceId", o.TraceID)
+	}
+
+	if o.Level != "" {
+		queryParams.Set("level", string(o.Level))
+	}
+
+	if o.ParentObservationID != "" {
+		queryParams.Set("parentObservationId", o.ParentObservationID)
+	}
+
+	for _, environment := range o.Environment {
+		if environment != "" {
+			queryParams.Add("environment", environment)
+		}
+	}
+
+	if o.FromStartTime != nil {
+		queryParams.Set("fromStartTime", o.FromStartTime.Format(time.RFC3339))
+	}
+
+	if o.ToStartTime != nil {
+		queryParams.Set("toStartTime", o.ToStartTime.Format(time.RFC3339))
+	}
+
+	if o.Version != "" {
+		queryParams.Set("version", o.Version)
+	}
+
+	if o.Filter != "" {
+		queryParams.Set("filter", o.Filter)
+	}
+
+	path := "/api/public/observations"
+	if encodedQuery := queryParams.Encode(); encodedQuery != "" {
+		path += "?" + encodedQuery
+	}
+
+	return path, nil
+}
+
+func (o *ObservationsRequest) Encode() (io.Reader, error) {
+	return nil, nil
+}
+
+func (o *ObservationsRequest) ContentType() string {
+	return ""
 }
 
 type PromptRequest struct {

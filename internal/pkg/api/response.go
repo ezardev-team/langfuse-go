@@ -34,6 +34,12 @@ type PromptResponse struct {
 	Prompt  model.Prompt
 }
 
+type ObservationsResponse struct {
+	Response
+	Data []model.ObservationView `json:"data"`
+	Meta model.PaginationMeta    `json:"meta"`
+}
+
 func (r *Response) IsSuccess() bool {
 	return r.Code < http.StatusBadRequest
 }
@@ -69,6 +75,20 @@ func (r *Response) SetHeaders(_ restclientgo.Headers) error {
 
 type IngestionResponse struct {
 	Response
+}
+
+func (r *ObservationsResponse) Decode(body io.Reader) error {
+	rawBody, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	if r.RawBody == nil {
+		bodyString := string(rawBody)
+		r.RawBody = &bodyString
+	}
+
+	return json.Unmarshal(rawBody, r)
 }
 
 func (r *PromptResponse) IsSuccess() bool {

@@ -30,7 +30,7 @@ This is [Langfuse](https://langfuse.com)'s **unofficial** Go client, designed to
 
 You can load langfuse-go into your project by using:
 ```
-go get github.com/henomis/langfuse-go
+go get github.com/ezardev-team/langfuse-go
 ```
 
 
@@ -55,8 +55,8 @@ import (
         "context"
         "fmt"
 
-        "github.com/henomis/langfuse-go"
-        "github.com/henomis/langfuse-go/model"
+        "github.com/ezardev-team/langfuse-go"
+        "github.com/ezardev-team/langfuse-go/model"
 )
 
 func main() {
@@ -153,6 +153,36 @@ func main() {
 	l.Flush(context.Background())
 
 }
+```
+
+### Reusing cached LLM outputs
+
+If you store a cache key in `generation.metadata["cache_key"]`, you can avoid re-calling the LLM when that input repeats:
+
+```go
+ctx := context.Background()
+l := langfuse.New(ctx)
+
+cacheKey := "<function + model + temperature + normalized input hash>"
+if hit, err := l.FindCachedGeneration(ctx, cacheKey, &langfuse.GenerationCacheOptions{Name: "summarize_10k_item_7"}); err != nil {
+        panic(err)
+} else if hit != nil {
+        fmt.Printf("cache hit, returning prior output: %v\n", hit.Output)
+        return
+}
+
+// otherwise call your LLM and ingest a new generation, persisting the cache key in metadata
+gen, err := l.Generation(&model.Generation{
+        TraceID:  traceID,
+        Name:     "summarize_10k_item_7",
+        Metadata: model.M{"cache_key": cacheKey},
+        Input:    normalizedInput,
+        Model:    "gemini-1.5-pro",
+}, nil)
+if err != nil {
+        panic(err)
+}
+// ...
 ```
 
 ## Who uses langfuse-go?

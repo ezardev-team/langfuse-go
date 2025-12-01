@@ -45,6 +45,10 @@ func (c *Client) Prompt(ctx context.Context, req *PromptRequest, res *PromptResp
 	return c.restClient.Get(ctx, req, res)
 }
 
+func (c *Client) Observations(ctx context.Context, req *ObservationsRequest, res *ObservationsResponse) error {
+	return c.restClient.Get(ctx, req, res)
+}
+
 func basicAuth(publicKey, secretKey string) string {
 	auth := publicKey + ":" + secretKey
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
