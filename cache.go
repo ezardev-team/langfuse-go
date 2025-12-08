@@ -16,6 +16,10 @@ type GenerationCache interface {
 	// FindCachedGeneration searches for a GENERATION observation that matches the provided cache key
 	// (and optionally a specific observation name). It returns nil when no cached result exists.
 	FindCachedGeneration(ctx context.Context, cacheKey string, options *GenerationCacheOptions) (*model.ObservationView, error)
+
+	// FindCachedGenerationBatch searches for multiple GENERATION observations that match the provided cache keys.
+	// Returns a map of cacheKey -> ObservationView for found entries. Keys not found are omitted from the result.
+	FindCachedGenerationBatch(ctx context.Context, cacheKeys []string, options *GenerationCacheOptions) (map[string]*model.ObservationView, error)
 }
 
 type GenerationCacheOptions struct {
@@ -39,6 +43,21 @@ func (l *Langfuse) FindCachedGeneration(ctx context.Context, cacheKey string, op
 		return nil, fmt.Errorf("cache key is required")
 	}
 
+	hits, err := l.FindCachedGenerationBatch(ctx, []string{cacheKey}, options)
+	if err != nil {
+		return nil, err
+	}
+
+	return hits[cacheKey], nil
+}
+
+// FindCachedGenerationBatch searches for multiple GENERATION observations that match the provided cache keys.
+// Returns a map of cacheKey -> ObservationView for found entries. Keys not found are omitted from the result.
+func (l *Langfuse) FindCachedGenerationBatch(ctx context.Context, cacheKeys []string, options *GenerationCacheOptions) (map[string]*model.ObservationView, error) {
+	if len(cacheKeys) == 0 {
+		return make(map[string]*model.ObservationView), nil
+	}
+
 	filters := []observationFilter{
 		{
 			Type:     "string",
@@ -50,8 +69,8 @@ func (l *Langfuse) FindCachedGeneration(ctx context.Context, cacheKey string, op
 			Type:     "stringObject",
 			Column:   "metadata",
 			Key:      cacheMetadataKey,
-			Operator: "=",
-			Value:    cacheKey,
+			Operator: "any of",
+			Value:    cacheKeys,
 		},
 	}
 
@@ -69,12 +88,14 @@ func (l *Langfuse) FindCachedGeneration(ctx context.Context, cacheKey string, op
 		return nil, fmt.Errorf("failed to encode observation filters: %w", err)
 	}
 
-	limit := 1
+	limit := len(cacheKeys)
 	page := 1
+	orderBy := "startTime"
 	req := api.ObservationsRequest{
-		Page:   &page,
-		Limit:  &limit,
-		Filter: string(filterString),
+		Page:    &page,
+		Limit:   &limit,
+		Filter:  string(filterString),
+		OrderBy: &orderBy,
 	}
 
 	res := api.ObservationsResponse{}
@@ -89,9 +110,35 @@ func (l *Langfuse) FindCachedGeneration(ctx context.Context, cacheKey string, op
 		return nil, fmt.Errorf("observations request failed with status code: %d", res.Code)
 	}
 
-	if len(res.Data) == 0 {
-		return nil, nil
+	result := make(map[string]*model.ObservationView)
+	for i := range res.Data {
+		obs := &res.Data[i]
+		cacheKey, ok := extractCacheKeyFromMetadata(obs.Metadata)
+		if !ok {
+			continue
+		}
+
+		if _, exists := result[cacheKey]; !exists {
+			result[cacheKey] = obs
+		}
 	}
 
-	return &res.Data[0], nil
+	return result, nil
+}
+
+func extractCacheKeyFromMetadata(metadata any) (string, bool) {
+	switch m := metadata.(type) {
+	case map[string]interface{}:
+		if val, ok := m[cacheMetadataKey]; ok {
+			cacheKey, ok := val.(string)
+			return cacheKey, ok
+		}
+	case model.M:
+		if val, ok := m[cacheMetadataKey]; ok {
+			cacheKey, ok := val.(string)
+			return cacheKey, ok
+		}
+	}
+
+	return "", false
 }

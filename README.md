@@ -185,6 +185,23 @@ if err != nil {
 // ...
 ```
 
+You can also fetch multiple cached generations in one API call to reduce latency:
+
+```go
+hits, err := l.FindCachedGenerationBatch(ctx, []string{"cache-key-1", "cache-key-2"}, nil)
+if err != nil {
+        panic(err)
+}
+
+if hit, ok := hits["cache-key-1"]; ok {
+        fmt.Printf("found cached output for key 1: %v\n", hit.Output)
+}
+
+if hit, ok := hits["cache-key-2"]; ok {
+        fmt.Printf("found cached output for key 2: %v\n", hit.Output)
+}
+```
+
 ## Who uses langfuse-go?
 
 * [LinGoose](https://github.com/henomis/lingoose) Go framework for building awesome LLM apps

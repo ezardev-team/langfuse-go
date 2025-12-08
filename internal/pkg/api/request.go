@@ -52,6 +52,7 @@ type ObservationsRequest struct {
 	ToStartTime         *time.Time
 	Version             string
 	Filter              string
+	OrderBy             *string
 }
 
 func (o *ObservationsRequest) Path() (string, error) {
@@ -109,6 +110,10 @@ func (o *ObservationsRequest) Path() (string, error) {
 
 	if o.Filter != "" {
 		queryParams.Set("filter", o.Filter)
+	}
+
+	if o.OrderBy != nil {
+		queryParams.Set("orderBy", *o.OrderBy)
 	}
 
 	path := "/api/public/observations"
