@@ -43,12 +43,7 @@ func (l *Langfuse) FindCachedGeneration(ctx context.Context, cacheKey string, op
 		return nil, fmt.Errorf("cache key is required")
 	}
 
-	hits, err := l.FindCachedGenerationBatch(ctx, []string{cacheKey}, options)
-	if err != nil {
-		return nil, err
-	}
-
-	return hits[cacheKey], nil
+	return l.findCachedGeneration(ctx, cacheKey, options)
 }
 
 // FindCachedGenerationBatch searches for multiple GENERATION observations that match the provided cache keys.
@@ -58,6 +53,27 @@ func (l *Langfuse) FindCachedGenerationBatch(ctx context.Context, cacheKeys []st
 		return make(map[string]*model.ObservationView), nil
 	}
 
+	result := make(map[string]*model.ObservationView)
+
+	for _, cacheKey := range cacheKeys {
+		if cacheKey == "" {
+			return nil, fmt.Errorf("cache key is required")
+		}
+
+		obs, err := l.findCachedGeneration(ctx, cacheKey, options)
+		if err != nil {
+			return nil, err
+		}
+
+		if obs != nil {
+			result[cacheKey] = obs
+		}
+	}
+
+	return result, nil
+}
+
+func (l *Langfuse) findCachedGeneration(ctx context.Context, cacheKey string, options *GenerationCacheOptions) (*model.ObservationView, error) {
 	filters := []observationFilter{
 		{
 			Type:     "string",
@@ -69,8 +85,8 @@ func (l *Langfuse) FindCachedGenerationBatch(ctx context.Context, cacheKeys []st
 			Type:     "stringObject",
 			Column:   "metadata",
 			Key:      cacheMetadataKey,
-			Operator: "any of",
-			Value:    cacheKeys,
+			Operator: "=",
+			Value:    cacheKey,
 		},
 	}
 
@@ -88,7 +104,7 @@ func (l *Langfuse) FindCachedGenerationBatch(ctx context.Context, cacheKeys []st
 		return nil, fmt.Errorf("failed to encode observation filters: %w", err)
 	}
 
-	limit := len(cacheKeys)
+	limit := 1
 	page := 1
 	orderBy := "startTime"
 	req := api.ObservationsRequest{
@@ -110,20 +126,17 @@ func (l *Langfuse) FindCachedGenerationBatch(ctx context.Context, cacheKeys []st
 		return nil, fmt.Errorf("observations request failed with status code: %d", res.Code)
 	}
 
-	result := make(map[string]*model.ObservationView)
 	for i := range res.Data {
 		obs := &res.Data[i]
-		cacheKey, ok := extractCacheKeyFromMetadata(obs.Metadata)
-		if !ok {
+		foundCacheKey, ok := extractCacheKeyFromMetadata(obs.Metadata)
+		if !ok || foundCacheKey != cacheKey {
 			continue
 		}
 
-		if _, exists := result[cacheKey]; !exists {
-			result[cacheKey] = obs
-		}
+		return obs, nil
 	}
 
-	return result, nil
+	return nil, nil
 }
 
 func extractCacheKeyFromMetadata(metadata any) (string, bool) {
