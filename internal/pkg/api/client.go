@@ -37,7 +37,13 @@ func New() *Client {
 	}
 }
 
+// Deprecated: Langfuse ingestion API is being replaced by OpenTelemetry. Use OpenTelemetryTraces.
 func (c *Client) Ingestion(ctx context.Context, req *Ingestion, res *IngestionResponse) error {
+	return c.restClient.Post(ctx, req, res)
+}
+
+// OpenTelemetryTraces posts OTLP/HTTP traces to Langfuse.
+func (c *Client) OpenTelemetryTraces(ctx context.Context, req *OpenTelemetryTracesRequest, res *OpenTelemetryResponse) error {
 	return c.restClient.Post(ctx, req, res)
 }
 

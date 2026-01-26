@@ -77,6 +77,54 @@ type IngestionResponse struct {
 	Response
 }
 
+type OpenTelemetryResponse struct {
+	Code    int     `json:"-"`
+	RawBody *string `json:"-"`
+}
+
+func (r *OpenTelemetryResponse) IsSuccess() bool {
+	return r.Code < http.StatusBadRequest
+}
+
+func (r *OpenTelemetryResponse) SetStatusCode(code int) error {
+	r.Code = code
+	return nil
+}
+
+func (r *OpenTelemetryResponse) SetBody(body io.Reader) error {
+	b, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	s := string(b)
+	r.RawBody = &s
+
+	return nil
+}
+
+func (r *OpenTelemetryResponse) AcceptContentType() string {
+	return ""
+}
+
+func (r *OpenTelemetryResponse) Decode(body io.Reader) error {
+	rawBody, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	if r.RawBody == nil {
+		bodyString := string(rawBody)
+		r.RawBody = &bodyString
+	}
+
+	return nil
+}
+
+func (r *OpenTelemetryResponse) SetHeaders(_ restclientgo.Headers) error {
+	return nil
+}
+
 func (r *ObservationsResponse) Decode(body io.Reader) error {
 	rawBody, err := io.ReadAll(body)
 	if err != nil {

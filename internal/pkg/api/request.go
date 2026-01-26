@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	ContentTypeJSON = "application/json"
+	ContentTypeJSON     = "application/json"
+	ContentTypeProtobuf = "application/x-protobuf"
 )
 
 type Request struct{}
@@ -36,6 +37,32 @@ func (t *Ingestion) Encode() (io.Reader, error) {
 
 func (t *Ingestion) ContentType() string {
 	return ContentTypeJSON
+}
+
+type OpenTelemetryTracesRequest struct {
+	Body                []byte
+	PathOverride        string
+	ContentTypeOverride string
+}
+
+func (t *OpenTelemetryTracesRequest) Path() (string, error) {
+	if t.PathOverride != "" {
+		return t.PathOverride, nil
+	}
+
+	return "/api/public/otel/v1/traces", nil
+}
+
+func (t *OpenTelemetryTracesRequest) Encode() (io.Reader, error) {
+	return bytes.NewReader(t.Body), nil
+}
+
+func (t *OpenTelemetryTracesRequest) ContentType() string {
+	if t.ContentTypeOverride != "" {
+		return t.ContentTypeOverride
+	}
+
+	return ContentTypeProtobuf
 }
 
 type ObservationsRequest struct {
