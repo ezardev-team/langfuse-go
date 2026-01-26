@@ -155,6 +155,13 @@ func main() {
 }
 ```
 
+### Migration (Ingestion -> OTEL)
+
+If you previously sent events to the deprecated ingestion endpoint, switch to the high-level SDK API.
+It now sends OTLP/HTTP traces to `/api/public/otel/v1/traces` by default.
+
+See `examples/cmd/migration/main.go` for a full migration example.
+
 ### Reusing cached LLM outputs
 
 If you store a cache key in `generation.metadata["cache_key"]`, you can avoid re-calling the LLM when that input repeats:
