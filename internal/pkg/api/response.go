@@ -73,10 +73,6 @@ func (r *Response) SetHeaders(_ restclientgo.Headers) error {
 	return nil
 }
 
-type IngestionResponse struct {
-	Response
-}
-
 type OpenTelemetryResponse struct {
 	Code    int     `json:"-"`
 	RawBody *string `json:"-"`

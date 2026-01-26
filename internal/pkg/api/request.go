@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -17,27 +16,6 @@ const (
 )
 
 type Request struct{}
-
-type Ingestion struct {
-	Batch []model.IngestionEvent `json:"batch"`
-}
-
-func (t *Ingestion) Path() (string, error) {
-	return "/api/public/ingestion", nil
-}
-
-func (t *Ingestion) Encode() (io.Reader, error) {
-	jsonBytes, err := json.Marshal(t)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes.NewReader(jsonBytes), nil
-}
-
-func (t *Ingestion) ContentType() string {
-	return ContentTypeJSON
-}
 
 type OpenTelemetryTracesRequest struct {
 	Body                []byte

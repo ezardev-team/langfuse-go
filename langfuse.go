@@ -8,6 +8,7 @@ import (
 
 	"github.com/ezardev-team/langfuse-go/internal/pkg/api"
 	"github.com/ezardev-team/langfuse-go/internal/pkg/observer"
+	"github.com/ezardev-team/langfuse-go/internal/pkg/otel"
 	"github.com/ezardev-team/langfuse-go/model"
 	"github.com/google/uuid"
 )
@@ -48,12 +49,16 @@ func (l *Langfuse) WithFlushInterval(d time.Duration) *Langfuse {
 }
 
 func ingest(ctx context.Context, client *api.Client, events []model.IngestionEvent) error {
-	req := api.Ingestion{
-		Batch: events,
+	payload, err := otel.EncodeEvents(events)
+	if err != nil {
+		return err
 	}
 
-	res := api.IngestionResponse{}
-	return client.Ingestion(ctx, &req, &res)
+	req := api.OpenTelemetryTracesRequest{
+		Body: payload,
+	}
+	res := api.OpenTelemetryResponse{}
+	return client.OpenTelemetryTraces(ctx, &req, &res)
 }
 
 func (l *Langfuse) Trace(t *model.Trace) (*model.Trace, error) {
