@@ -85,7 +85,7 @@ func (l *Langfuse) findCachedGeneration(ctx context.Context, cacheKey string, op
 			Type:     "stringObject",
 			Column:   "metadata",
 			Key:      cacheMetadataKey,
-			Operator: "=",
+			Operator: "contains",
 			Value:    cacheKey,
 		},
 	}
