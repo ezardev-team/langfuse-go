@@ -80,6 +80,8 @@ type Generation struct {
 	Usage               Usage            `json:"usage,omitempty"`
 	PromptName          string           `json:"promptName,omitempty"`
 	PromptVersion       int              `json:"promptVersion,omitempty"`
+	// Prompt object reference for Linked Generations auto-matching.
+	Prompt *Prompt `json:"prompt,omitempty"`
 }
 
 type Usage struct {

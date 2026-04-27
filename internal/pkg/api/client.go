@@ -46,6 +46,12 @@ func (c *Client) Prompt(ctx context.Context, req *PromptRequest, res *PromptResp
 	return c.restClient.Get(ctx, req, res)
 }
 
+// UpsertPrompt POSTs a new prompt version to Langfuse `/api/public/v2/prompts`.
+// 같은 Name 으로 호출하면 새 version 이 생성된다 (idempotent).
+func (c *Client) UpsertPrompt(ctx context.Context, req *PromptUpsertRequest, res *PromptUpsertResponse) error {
+	return c.restClient.Post(ctx, req, res)
+}
+
 func (c *Client) Observations(ctx context.Context, req *ObservationsRequest, res *ObservationsResponse) error {
 	return c.restClient.Get(ctx, req, res)
 }
