@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -176,4 +177,35 @@ func (p *PromptRequest) Encode() (io.Reader, error) {
 
 func (p *PromptRequest) ContentType() string {
 	return ""
+}
+
+// PromptUpsertRequest 는 Langfuse `POST /api/public/v2/prompts` 요청 body.
+// 같은 Name 으로 호출하면 Langfuse 가 새 version 을 자동 생성한다 (idempotent semantics).
+type PromptUpsertRequest struct {
+	Name          string   `json:"name"`
+	Type          string   `json:"type"` // "chat" | "text"
+	Prompt        any      `json:"prompt"`
+	Config        any      `json:"config,omitempty"`
+	Labels        []string `json:"labels,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
+	CommitMessage string   `json:"commitMessage,omitempty"`
+}
+
+func (p *PromptUpsertRequest) Path() (string, error) {
+	if p.Name == "" {
+		return "", fmt.Errorf("prompt name is required")
+	}
+	return "/api/public/v2/prompts", nil
+}
+
+func (p *PromptUpsertRequest) Encode() (io.Reader, error) {
+	body, err := json.Marshal(p)
+	if err != nil {
+		return nil, fmt.Errorf("encode PromptUpsertRequest: %w", err)
+	}
+	return bytes.NewReader(body), nil
+}
+
+func (p *PromptUpsertRequest) ContentType() string {
+	return ContentTypeJSON
 }

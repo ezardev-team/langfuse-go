@@ -34,6 +34,14 @@ type PromptResponse struct {
 	Prompt  model.Prompt
 }
 
+// PromptUpsertResponse 는 `POST /api/public/v2/prompts` 응답.
+// 새로 생성된 prompt (id + version) 를 담는다.
+type PromptUpsertResponse struct {
+	Code    int     `json:"-"`
+	RawBody *string `json:"-"`
+	Prompt  model.Prompt
+}
+
 type ObservationsResponse struct {
 	Response
 	Data []model.ObservationView `json:"data"`
@@ -193,6 +201,64 @@ func (r *PromptResponse) Decode(body io.Reader) error {
 }
 
 func (r *PromptResponse) SetHeaders(_ restclientgo.Headers) error {
+	return nil
+}
+
+func (r *PromptUpsertResponse) IsSuccess() bool {
+	return r.Code < http.StatusBadRequest
+}
+
+func (r *PromptUpsertResponse) SetStatusCode(code int) error {
+	r.Code = code
+	return nil
+}
+
+func (r *PromptUpsertResponse) SetBody(body io.Reader) error {
+	b, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	s := string(b)
+	r.RawBody = &s
+
+	return nil
+}
+
+func (r *PromptUpsertResponse) AcceptContentType() string {
+	return ContentTypeJSON
+}
+
+func (r *PromptUpsertResponse) Decode(body io.Reader) error {
+	rawBody, err := io.ReadAll(body)
+	if err != nil {
+		return err
+	}
+
+	if r.RawBody == nil {
+		bodyString := string(rawBody)
+		r.RawBody = &bodyString
+	}
+
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(rawBody, &envelope); err != nil {
+		return err
+	}
+
+	// Langfuse 가 생성된 prompt 를 top-level 또는 {"prompt": ...} 로 반환할 수 있어
+	// PromptResponse 와 동일 envelope-aware 로직을 사용한다.
+	if hasPromptMetadata(envelope) {
+		return json.Unmarshal(rawBody, &r.Prompt)
+	}
+
+	if promptRaw, ok := envelope["prompt"]; ok {
+		return json.Unmarshal(promptRaw, &r.Prompt)
+	}
+
+	return json.Unmarshal(rawBody, &r.Prompt)
+}
+
+func (r *PromptUpsertResponse) SetHeaders(_ restclientgo.Headers) error {
 	return nil
 }
 
