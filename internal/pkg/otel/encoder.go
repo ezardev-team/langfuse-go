@@ -353,6 +353,10 @@ func applyGenerationCreate(observations map[string]*observationState, gen *model
 	state.parentID = coalesce(state.parentID, gen.ParentObservationID)
 	state.name = coalesce(state.name, gen.Name)
 	state.startTime = coalesceTime(state.startTime, gen.StartTime)
+	// Propagate EndTime so single-call Generation(create-with-both-times)
+	// records actual latency. Without this the OTLP span fell back to
+	// endTime = startTime, producing latency=0 in Langfuse.
+	state.endTime = coalesceTime(state.endTime, gen.EndTime)
 	state.input = coalesceAny(state.input, gen.Input)
 	state.output = coalesceAny(state.output, gen.Output)
 	state.metadata = coalesceAny(state.metadata, gen.Metadata)
@@ -427,6 +431,10 @@ func applySpanCreate(observations map[string]*observationState, span *model.Span
 	state.parentID = coalesce(state.parentID, span.ParentObservationID)
 	state.name = coalesce(state.name, span.Name)
 	state.startTime = coalesceTime(state.startTime, span.StartTime)
+	// Propagate EndTime so single-call Span(create-with-both-times) records
+	// actual latency. Without this the OTLP span fell back to
+	// endTime = startTime, producing latency=0 in Langfuse.
+	state.endTime = coalesceTime(state.endTime, span.EndTime)
 	state.input = coalesceAny(state.input, span.Input)
 	state.output = coalesceAny(state.output, span.Output)
 	state.metadata = coalesceAny(state.metadata, span.Metadata)
