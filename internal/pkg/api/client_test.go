@@ -167,9 +167,7 @@ func TestObservations(t *testing.T) {
 	ctx := context.Background()
 
 	limit := 5
-	page := 1
 	req := &ObservationsRequest{
-		Page:  &page,
 		Limit: &limit,
 	}
 
@@ -183,8 +181,12 @@ func TestObservations(t *testing.T) {
 		t.Fatalf("expected success response, got code=%d", res.Code)
 	}
 
-	t.Logf("Observations: code=%d, data_count=%d, total_items=%d, total_pages=%d",
-		res.Code, len(res.Data), res.Meta.TotalItems, res.Meta.TotalPages)
+	cursor := ""
+	if res.Meta.Cursor != nil {
+		cursor = *res.Meta.Cursor
+	}
+	t.Logf("Observations: code=%d, data_count=%d, next_cursor=%q",
+		res.Code, len(res.Data), cursor)
 }
 
 func TestObservations_WithTypeFilter(t *testing.T) {
@@ -194,9 +196,7 @@ func TestObservations_WithTypeFilter(t *testing.T) {
 	ctx := context.Background()
 
 	limit := 5
-	page := 1
 	req := &ObservationsRequest{
-		Page:  &page,
 		Limit: &limit,
 		Type:  model.ObservationTypeGeneration,
 	}
@@ -227,9 +227,7 @@ func TestObservations_WithNameFilter(t *testing.T) {
 	ctx := context.Background()
 
 	limit := 5
-	page := 1
 	req := &ObservationsRequest{
-		Page:  &page,
 		Limit: &limit,
 		Name:  "api-test-multi-generation",
 	}

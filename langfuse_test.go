@@ -29,16 +29,15 @@ func queryObservationsByName(t *testing.T, ctx context.Context, name string, obs
 	t.Helper()
 	client := api.New()
 	limit := 10
-	page := 1
 
 	// Retry a few times since OTEL data takes time to index
 	for attempt := 1; attempt <= 3; attempt++ {
 		time.Sleep(3 * time.Second)
 
 		req := &api.ObservationsRequest{
-			Page:  &page,
-			Limit: &limit,
-			Name:  name,
+			Limit:  &limit,
+			Name:   name,
+			Fields: "basic,time,io,metadata,model,usage,prompt,metrics",
 		}
 		if obsType != "" {
 			req.Type = obsType
@@ -302,9 +301,9 @@ func TestTracing_GenerationCreateAndUpdate(t *testing.T) {
 	} else {
 		obs := observations[0]
 		t.Logf("Verified: model=%s", obs.Model)
-		if obs.Usage.TotalTokens > 0 {
-			t.Logf("  usage: total=%d, prompt=%d, completion=%d",
-				obs.Usage.TotalTokens, obs.Usage.PromptTokens, obs.Usage.CompletionTokens)
+		if total := obs.UsageDetails["total"]; total > 0 {
+			t.Logf("  usage: total=%d, input=%d, output=%d",
+				total, obs.UsageDetails["input"], obs.UsageDetails["output"])
 		}
 	}
 }
@@ -592,6 +591,6 @@ func TestTracing_OtelEncodingAndSend(t *testing.T) {
 	} else {
 		obs := observations[0]
 		t.Logf("Verified: [%s] name=%s model=%s totalTokens=%d",
-			obs.Type, obs.Name, obs.Model, obs.Usage.TotalTokens)
+			obs.Type, obs.Name, obs.Model, obs.UsageDetails["total"])
 	}
 }

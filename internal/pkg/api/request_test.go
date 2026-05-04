@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"io"
 	"net/url"
 	"strings"
@@ -212,7 +211,7 @@ func TestPromptRequest_Encode(t *testing.T) {
 	}
 }
 
-// --- ObservationsRequest tests ---
+// --- ObservationsRequest (v2) tests ---
 
 func TestObservationsRequest_Path_NoParams(t *testing.T) {
 	req := &ObservationsRequest{}
@@ -220,17 +219,16 @@ func TestObservationsRequest_Path_NoParams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if path != "/api/public/observations" {
-		t.Errorf("expected /api/public/observations, got %s", path)
+	if path != "/api/public/v2/observations" {
+		t.Errorf("expected /api/public/v2/observations, got %s", path)
 	}
 }
 
-func TestObservationsRequest_Path_WithPagination(t *testing.T) {
-	page := 2
+func TestObservationsRequest_Path_WithCursorPagination(t *testing.T) {
 	limit := 10
 	req := &ObservationsRequest{
-		Page:  &page,
-		Limit: &limit,
+		Cursor: "abc123==",
+		Limit:  &limit,
 	}
 	path, err := req.Path()
 	if err != nil {
@@ -242,24 +240,50 @@ func TestObservationsRequest_Path_WithPagination(t *testing.T) {
 		t.Fatalf("failed to parse path: %v", err)
 	}
 
-	if u.Query().Get("page") != "2" {
-		t.Errorf("expected page=2, got %s", u.Query().Get("page"))
+	if u.Query().Get("cursor") != "abc123==" {
+		t.Errorf("expected cursor=abc123==, got %s", u.Query().Get("cursor"))
 	}
 	if u.Query().Get("limit") != "10" {
 		t.Errorf("expected limit=10, got %s", u.Query().Get("limit"))
 	}
+	if u.Query().Get("page") != "" {
+		t.Errorf("page param should not be present in v2, got %s", u.Query().Get("page"))
+	}
+}
+
+func TestObservationsRequest_Path_FieldsAndExpandMetadata(t *testing.T) {
+	req := &ObservationsRequest{
+		Fields:         "basic,io,metadata",
+		ExpandMetadata: "cache_key,trace_id",
+	}
+	path, err := req.Path()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	u, err := url.Parse(path)
+	if err != nil {
+		t.Fatalf("failed to parse path: %v", err)
+	}
+
+	if u.Query().Get("fields") != "basic,io,metadata" {
+		t.Errorf("expected fields=basic,io,metadata, got %s", u.Query().Get("fields"))
+	}
+	if u.Query().Get("expandMetadata") != "cache_key,trace_id" {
+		t.Errorf("expected expandMetadata=cache_key,trace_id, got %s", u.Query().Get("expandMetadata"))
+	}
 }
 
 func TestObservationsRequest_Path_AllParams(t *testing.T) {
-	page := 1
 	limit := 5
-	orderBy := "startTime"
 	fromTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	toTime := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
 
 	req := &ObservationsRequest{
-		Page:                &page,
+		Cursor:              "cursor-xyz",
 		Limit:               &limit,
+		Fields:              "basic,io",
+		ExpandMetadata:      "cache_key",
 		Name:                "test-obs",
 		UserID:              "user-123",
 		Type:                model.ObservationTypeGeneration,
@@ -271,7 +295,6 @@ func TestObservationsRequest_Path_AllParams(t *testing.T) {
 		ToStartTime:         &toTime,
 		Version:             "v1",
 		Filter:              "some-filter",
-		OrderBy:             &orderBy,
 	}
 
 	path, err := req.Path()
@@ -287,8 +310,10 @@ func TestObservationsRequest_Path_AllParams(t *testing.T) {
 	q := u.Query()
 
 	checks := map[string]string{
-		"page":                "1",
+		"cursor":              "cursor-xyz",
 		"limit":               "5",
+		"fields":              "basic,io",
+		"expandMetadata":      "cache_key",
 		"name":                "test-obs",
 		"userId":              "user-123",
 		"type":                "GENERATION",
@@ -297,7 +322,6 @@ func TestObservationsRequest_Path_AllParams(t *testing.T) {
 		"parentObservationId": "parent-789",
 		"version":             "v1",
 		"filter":              "some-filter",
-		"orderBy":             "startTime",
 	}
 
 	for key, expected := range checks {
@@ -377,35 +401,5 @@ func TestObservationsRequest_Encode(t *testing.T) {
 	}
 	if reader != nil {
 		t.Error("expected nil reader for GET request")
-	}
-}
-
-func TestObservationsRequest_Path_PageValues(t *testing.T) {
-	tests := []struct {
-		page     int
-		expected string
-	}{
-		{0, "0"},
-		{1, "1"},
-		{100, "100"},
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("page_%d", tt.page), func(t *testing.T) {
-			req := &ObservationsRequest{Page: &tt.page}
-			path, err := req.Path()
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			u, err := url.Parse(path)
-			if err != nil {
-				t.Fatalf("failed to parse path: %v", err)
-			}
-
-			if got := u.Query().Get("page"); got != tt.expected {
-				t.Errorf("expected page=%s, got %s", tt.expected, got)
-			}
-		})
 	}
 }

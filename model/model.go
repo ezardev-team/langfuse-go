@@ -146,40 +146,51 @@ type Event struct {
 	ID                  string           `json:"id,omitempty"`
 }
 
+// ObservationView is decoded from `GET /api/public/v2/observations`.
+//
+// Fields available depend on the request's `fields` parameter; missing groups
+// stay at zero values. See:
+// https://api.reference.langfuse.com/#tag/observationsv2/GET/api/public/v2/observations
 type ObservationView struct {
 	ID                  string             `json:"id"`
+	ProjectID           string             `json:"projectId,omitempty"`
 	TraceID             string             `json:"traceId,omitempty"`
 	Type                ObservationType    `json:"type,omitempty"`
 	Name                string             `json:"name,omitempty"`
 	StartTime           *time.Time         `json:"startTime,omitempty"`
 	EndTime             *time.Time         `json:"endTime,omitempty"`
 	CompletionStartTime *time.Time         `json:"completionStartTime,omitempty"`
-	Model               string             `json:"model,omitempty"`
+	CreatedAt           *time.Time         `json:"createdAt,omitempty"`
+	UpdatedAt           *time.Time         `json:"updatedAt,omitempty"`
+	Model               string             `json:"providedModelName,omitempty"`
+	ModelID             string             `json:"internalModelId,omitempty"`
 	ModelParameters     any                `json:"modelParameters,omitempty"`
 	Input               any                `json:"input,omitempty"`
 	Version             string             `json:"version,omitempty"`
 	Metadata            any                `json:"metadata,omitempty"`
 	Output              any                `json:"output,omitempty"`
-	Usage               Usage              `json:"usage,omitempty"`
 	UsageDetails        map[string]int     `json:"usageDetails,omitempty"`
 	CostDetails         map[string]float64 `json:"costDetails,omitempty"`
+	TotalCost           float64            `json:"totalCost,omitempty"`
+	Latency             float64            `json:"latency,omitempty"`
+	TimeToFirstToken    float64            `json:"timeToFirstToken,omitempty"`
 	Level               ObservationLevel   `json:"level,omitempty"`
 	StatusMessage       string             `json:"statusMessage,omitempty"`
 	ParentObservationID string             `json:"parentObservationId,omitempty"`
+	PromptID            string             `json:"promptId,omitempty"`
 	PromptName          string             `json:"promptName,omitempty"`
 	PromptVersion       int                `json:"promptVersion,omitempty"`
-	ModelID             string             `json:"modelId,omitempty"`
-	InputPrice          float64            `json:"inputPrice,omitempty"`
-	OutputPrice         float64            `json:"outputPrice,omitempty"`
-	TotalPrice          float64            `json:"totalPrice,omitempty"`
+	UserID              string             `json:"userId,omitempty"`
+	SessionID           string             `json:"sessionId,omitempty"`
 	Environment         string             `json:"environment,omitempty"`
+	Bookmarked          bool               `json:"bookmarked,omitempty"`
+	Public              bool               `json:"public,omitempty"`
 }
 
-type PaginationMeta struct {
-	Page       int `json:"page"`
-	Limit      int `json:"limit"`
-	TotalItems int `json:"totalItems"`
-	TotalPages int `json:"totalPages"`
+// ObservationsCursorMeta is the pagination meta returned by
+// `GET /api/public/v2/observations`. Cursor is nil when no more pages remain.
+type ObservationsCursorMeta struct {
+	Cursor *string `json:"cursor"`
 }
 
 type Prompt struct {

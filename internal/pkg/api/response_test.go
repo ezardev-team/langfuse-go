@@ -295,14 +295,21 @@ func TestPromptResponse_SetHeaders(t *testing.T) {
 func TestObservationsResponse_Decode(t *testing.T) {
 	jsonBody := `{
 		"data": [
-			{"id": "obs-1", "type": "GENERATION", "name": "gen-1"},
-			{"id": "obs-2", "type": "SPAN", "name": "span-1"}
+			{
+				"id": "obs-1",
+				"projectId": "proj-1",
+				"type": "GENERATION",
+				"name": "gen-1",
+				"providedModelName": "gpt-4",
+				"internalModelId": "openai-gpt-4",
+				"totalCost": 0.0125,
+				"latency": 1.5,
+				"usageDetails": {"input": 100, "output": 50, "total": 150}
+			},
+			{"id": "obs-2", "projectId": "proj-1", "type": "SPAN", "name": "span-1"}
 		],
 		"meta": {
-			"page": 1,
-			"limit": 10,
-			"totalItems": 2,
-			"totalPages": 1
+			"cursor": "next-page-token=="
 		}
 	}`
 
@@ -317,16 +324,41 @@ func TestObservationsResponse_Decode(t *testing.T) {
 	if r.Data[0].ID != "obs-1" {
 		t.Errorf("expected first observation ID obs-1, got %s", r.Data[0].ID)
 	}
-	if r.Meta.TotalItems != 2 {
-		t.Errorf("expected totalItems=2, got %d", r.Meta.TotalItems)
+	if r.Data[0].Model != "gpt-4" {
+		t.Errorf("expected providedModelName decoded into Model=gpt-4, got %s", r.Data[0].Model)
 	}
-	if r.Meta.TotalPages != 1 {
-		t.Errorf("expected totalPages=1, got %d", r.Meta.TotalPages)
+	if r.Data[0].ModelID != "openai-gpt-4" {
+		t.Errorf("expected internalModelId decoded into ModelID=openai-gpt-4, got %s", r.Data[0].ModelID)
+	}
+	if r.Data[0].TotalCost != 0.0125 {
+		t.Errorf("expected totalCost=0.0125, got %v", r.Data[0].TotalCost)
+	}
+	if r.Data[0].UsageDetails["total"] != 150 {
+		t.Errorf("expected usageDetails.total=150, got %v", r.Data[0].UsageDetails["total"])
+	}
+	if r.Meta.Cursor == nil {
+		t.Fatal("expected Meta.Cursor to be set")
+	}
+	if *r.Meta.Cursor != "next-page-token==" {
+		t.Errorf("expected cursor=next-page-token==, got %s", *r.Meta.Cursor)
+	}
+}
+
+func TestObservationsResponse_Decode_NullCursor(t *testing.T) {
+	jsonBody := `{"data":[],"meta":{"cursor":null}}`
+
+	r := &ObservationsResponse{}
+	err := r.Decode(strings.NewReader(jsonBody))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.Meta.Cursor != nil {
+		t.Errorf("expected nil cursor, got %v", *r.Meta.Cursor)
 	}
 }
 
 func TestObservationsResponse_Decode_SetsRawBody(t *testing.T) {
-	jsonBody := `{"data":[],"meta":{"page":1,"limit":10,"totalItems":0,"totalPages":0}}`
+	jsonBody := `{"data":[],"meta":{"cursor":null}}`
 	r := &ObservationsResponse{}
 	err := r.Decode(strings.NewReader(jsonBody))
 	if err != nil {
@@ -342,7 +374,7 @@ func TestObservationsResponse_Decode_WithExistingRawBody(t *testing.T) {
 	r := &ObservationsResponse{}
 	r.RawBody = &existing
 
-	jsonBody := `{"data":[],"meta":{"page":1,"limit":10,"totalItems":0,"totalPages":0}}`
+	jsonBody := `{"data":[],"meta":{"cursor":null}}`
 	err := r.Decode(strings.NewReader(jsonBody))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

@@ -105,13 +105,11 @@ func (l *Langfuse) findCachedGeneration(ctx context.Context, cacheKey string, op
 	}
 
 	limit := 1
-	page := 1
-	orderBy := "startTime"
 	req := api.ObservationsRequest{
-		Page:    &page,
-		Limit:   &limit,
-		Filter:  string(filterString),
-		OrderBy: &orderBy,
+		Limit:          &limit,
+		Filter:         string(filterString),
+		Fields:         "basic,time,io,metadata,model,usage,prompt,metrics",
+		ExpandMetadata: cacheMetadataKey,
 	}
 
 	res := api.ObservationsResponse{}

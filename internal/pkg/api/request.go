@@ -44,9 +44,19 @@ func (t *OpenTelemetryTracesRequest) ContentType() string {
 	return ContentTypeProtobuf
 }
 
+// ObservationsRequest is the request for `GET /api/public/v2/observations`.
+//
+// Pagination is cursor-based: leave Cursor empty for the first page and pass
+// the value from the previous response's Meta.Cursor for subsequent pages.
+//
+// Fields controls which field groups the API returns. Available groups:
+// "core" (always included), "basic", "time", "io", "metadata", "model",
+// "usage", "prompt", "metrics". When empty, the API returns "core,basic".
 type ObservationsRequest struct {
-	Page                *int
+	Cursor              string
 	Limit               *int
+	Fields              string
+	ExpandMetadata      string
 	Name                string
 	UserID              string
 	Type                model.ObservationType
@@ -58,18 +68,25 @@ type ObservationsRequest struct {
 	ToStartTime         *time.Time
 	Version             string
 	Filter              string
-	OrderBy             *string
 }
 
 func (o *ObservationsRequest) Path() (string, error) {
 	queryParams := url.Values{}
 
-	if o.Page != nil {
-		queryParams.Set("page", fmt.Sprintf("%d", *o.Page))
+	if o.Cursor != "" {
+		queryParams.Set("cursor", o.Cursor)
 	}
 
 	if o.Limit != nil {
 		queryParams.Set("limit", fmt.Sprintf("%d", *o.Limit))
+	}
+
+	if o.Fields != "" {
+		queryParams.Set("fields", o.Fields)
+	}
+
+	if o.ExpandMetadata != "" {
+		queryParams.Set("expandMetadata", o.ExpandMetadata)
 	}
 
 	if o.Name != "" {
@@ -118,11 +135,7 @@ func (o *ObservationsRequest) Path() (string, error) {
 		queryParams.Set("filter", o.Filter)
 	}
 
-	if o.OrderBy != nil {
-		queryParams.Set("orderBy", *o.OrderBy)
-	}
-
-	path := "/api/public/observations"
+	path := "/api/public/v2/observations"
 	if encodedQuery := queryParams.Encode(); encodedQuery != "" {
 		path += "?" + encodedQuery
 	}

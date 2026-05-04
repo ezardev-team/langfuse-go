@@ -44,8 +44,8 @@ type PromptUpsertResponse struct {
 
 type ObservationsResponse struct {
 	Response
-	Data []model.ObservationView `json:"data"`
-	Meta model.PaginationMeta    `json:"meta"`
+	Data []model.ObservationView      `json:"data"`
+	Meta model.ObservationsCursorMeta `json:"meta"`
 }
 
 func (r *Response) IsSuccess() bool {
