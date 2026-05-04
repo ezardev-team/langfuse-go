@@ -37,7 +37,7 @@ func queryObservationsByName(t *testing.T, ctx context.Context, name string, obs
 		req := &api.ObservationsRequest{
 			Limit:  &limit,
 			Name:   name,
-			Fields: "basic,time,io,metadata,model,usage,prompt,metrics",
+			Fields: api.ObservationFieldsAll,
 		}
 		if obsType != "" {
 			req.Type = obsType

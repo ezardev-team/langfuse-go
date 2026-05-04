@@ -44,6 +44,12 @@ func (t *OpenTelemetryTracesRequest) ContentType() string {
 	return ContentTypeProtobuf
 }
 
+// ObservationFieldsAll requests every field group exposed by
+// `GET /api/public/v2/observations`. Use it when callers need a full
+// ObservationView round-trip (e.g. cache lookups that read metadata, model,
+// usage, and io together).
+const ObservationFieldsAll = "basic,time,io,metadata,model,usage,prompt,metrics"
+
 // ObservationsRequest is the request for `GET /api/public/v2/observations`.
 //
 // Pagination is cursor-based: leave Cursor empty for the first page and pass
@@ -52,6 +58,7 @@ func (t *OpenTelemetryTracesRequest) ContentType() string {
 // Fields controls which field groups the API returns. Available groups:
 // "core" (always included), "basic", "time", "io", "metadata", "model",
 // "usage", "prompt", "metrics". When empty, the API returns "core,basic".
+// See ObservationFieldsAll for the full set.
 type ObservationsRequest struct {
 	Cursor              string
 	Limit               *int

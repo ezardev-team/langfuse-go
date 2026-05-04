@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -78,7 +79,7 @@ func TestFindCachedGeneration_HitsV2Endpoint(t *testing.T) {
 	}
 	fields := capturedQuery.Get("fields")
 	for _, group := range []string{"metadata", "io", "model"} {
-		if !contains(fields, group) {
+		if !strings.Contains(fields, group) {
 			t.Errorf("fields=%q must contain %q", fields, group)
 		}
 	}
@@ -228,13 +229,4 @@ func TestFindCachedGeneration_EmptyKey(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty cache key, got nil")
 	}
-}
-
-func contains(s, substr string) bool {
-	for i := 0; i+len(substr) <= len(s); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
