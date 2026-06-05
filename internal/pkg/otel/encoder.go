@@ -577,13 +577,25 @@ func appendMetadataAttrs(prefix string, metadata any, attrs []*commonv1.KeyValue
 			if key == "" {
 				continue
 			}
-			attrs = append(attrs, attrString(prefix+key, jsonString(value)))
+			attrs = append(attrs, attrString(prefix+key, metadataValueString(value)))
 		}
 	default:
 		attrs = append(attrs, attrString(prefix+"raw", jsonString(metadata)))
 	}
 
 	return attrs
+}
+
+// metadataValueString renders a metadata value for an OTEL string attribute.
+// String values are stored verbatim: json.Marshal would wrap them in literal
+// double quotes (e.g. cache_key "abc" -> `"abc"`), which then get persisted on
+// the Langfuse side and break exact-match metadata filters and cache lookups.
+// Non-string values still fall back to their JSON encoding.
+func metadataValueString(value any) string {
+	if s, ok := value.(string); ok {
+		return s
+	}
+	return jsonString(value)
 }
 
 func jsonString(value any) string {

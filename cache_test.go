@@ -33,8 +33,10 @@ func TestFindCachedGeneration_HitsV2Endpoint(t *testing.T) {
 					"name":              "llm-call",
 					"providedModelName": "gpt-4o",
 					"output":            map[string]any{"answer": "42"},
-					"metadata":          map[string]any{cacheMetadataKey: "key-abc"},
-					"usageDetails":      map[string]int{"input": 10, "output": 20, "total": 30},
+					// Stored double-quoted, as legacy traces persisted scalar
+					// metadata; the lookup must still treat this as a hit.
+					"metadata":     map[string]any{cacheMetadataKey: `"key-abc"`},
+					"usageDetails": map[string]int{"input": 10, "output": 20, "total": 30},
 				},
 			},
 			"meta": map[string]any{"cursor": nil},
@@ -99,10 +101,45 @@ func TestFindCachedGeneration_HitsV2Endpoint(t *testing.T) {
 	if conds[0]["column"] != "type" || conds[0]["value"] != "GENERATION" {
 		t.Errorf("first filter not type=GENERATION: %+v", conds[0])
 	}
-	// Second filter: metadata.cache_key contains key-abc
+	// Second filter: metadata.cache_key matches key-abc (quote-tolerant)
 	if conds[1]["column"] != "metadata" || conds[1]["key"] != cacheMetadataKey ||
-		conds[1]["operator"] != "contains" || conds[1]["value"] != "key-abc" {
+		conds[1]["operator"] != "matches" || conds[1]["value"] != "key-abc" {
 		t.Errorf("metadata filter wrong: %+v", conds[1])
+	}
+}
+
+// TestFindCachedGeneration_HitUnquotedMetadata verifies the lookup also treats a
+// clean (unquoted) stored cache_key as a hit, i.e. traces written after the
+// encoder stopped JSON-quoting scalar metadata values.
+func TestFindCachedGeneration_HitUnquotedMetadata(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]any{
+				{
+					"id":       "obs-cached-2",
+					"type":     "GENERATION",
+					"metadata": map[string]any{cacheMetadataKey: "key-abc"},
+				},
+			},
+			"meta": map[string]any{"cursor": nil},
+		})
+	}))
+	defer srv.Close()
+
+	l, cleanup := newTestLangfuseFromServer(t, srv)
+	defer cleanup()
+
+	obs, err := l.FindCachedGeneration(context.Background(), "key-abc", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if obs == nil {
+		t.Fatal("expected cache hit for unquoted metadata, got nil")
+	}
+	if obs.ID != "obs-cached-2" {
+		t.Errorf("ID=%q, want obs-cached-2", obs.ID)
 	}
 }
 

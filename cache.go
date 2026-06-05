@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/ezardev-team/langfuse-go/internal/pkg/api"
 	"github.com/ezardev-team/langfuse-go/model"
@@ -82,10 +83,14 @@ func (l *Langfuse) findCachedGeneration(ctx context.Context, cacheKey string, op
 			Value:    model.ObservationTypeGeneration,
 		},
 		{
+			// `matches` (vs `=`) tolerates the surrounding JSON quotes that
+			// older traces persisted around scalar metadata values, so both a
+			// stored `"<key>"` and a clean `<key>` are returned as candidates.
+			// The exact check below is the real guarantee.
 			Type:     "stringObject",
 			Column:   "metadata",
 			Key:      cacheMetadataKey,
-			Operator: "contains",
+			Operator: "matches",
 			Value:    cacheKey,
 		},
 	}
@@ -127,7 +132,7 @@ func (l *Langfuse) findCachedGeneration(ctx context.Context, cacheKey string, op
 	for i := range res.Data {
 		obs := &res.Data[i]
 		foundCacheKey, ok := extractCacheKeyFromMetadata(obs.Metadata)
-		if !ok || foundCacheKey != cacheKey {
+		if !ok || normalizeMetadataString(foundCacheKey) != cacheKey {
 			continue
 		}
 
@@ -135,6 +140,16 @@ func (l *Langfuse) findCachedGeneration(ctx context.Context, cacheKey string, op
 	}
 
 	return nil, nil
+}
+
+// normalizeMetadataString undoes the optional JSON string quoting that some
+// Langfuse storage / expandMetadata paths apply to scalar metadata values, so a
+// stored `"<key>"` and a stored `<key>` both compare equal to the raw cache key.
+func normalizeMetadataString(s string) string {
+	if unquoted, err := strconv.Unquote(s); err == nil {
+		return unquoted
+	}
+	return s
 }
 
 func extractCacheKeyFromMetadata(metadata any) (string, bool) {
