@@ -96,6 +96,19 @@ type Usage struct {
 	PromptTokens     int `json:"promptTokens,omitempty"`
 	CompletionTokens int `json:"completionTokens,omitempty"`
 	TotalTokens      int `json:"totalTokens,omitempty"`
+
+	// UsageDetails carries arbitrary usage-type token counts beyond the fixed
+	// fields above (e.g. "output_reasoning", "cache_read_input_tokens"). It is
+	// merged into the emitted langfuse.observation.usage_details attribute and
+	// its keys override the fixed-field defaults on collision. Ingestion is via
+	// the OTLP encoder, so these are not part of the JSON ingestion payload.
+	UsageDetails map[string]int `json:"-"`
+	// CostDetails carries arbitrary precomputed per-usage-type costs in USD
+	// (e.g. "input", "output", "output_reasoning", "cache_read_input_tokens").
+	// It is merged into the emitted langfuse.observation.cost_details attribute.
+	// When present, Langfuse uses these ingested costs directly instead of
+	// inferring cost from the model definition.
+	CostDetails map[string]float64 `json:"-"`
 }
 
 type UsageUnit string

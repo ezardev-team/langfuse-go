@@ -632,6 +632,13 @@ func usageDetails(usage model.Usage) map[string]any {
 	if usage.TotalTokens != 0 {
 		details["totalTokens"] = usage.TotalTokens
 	}
+	// Merge caller-supplied breakdown keys (e.g. output_reasoning,
+	// cache_read_input_tokens). Map keys override the fixed-field defaults so a
+	// caller can replace the aggregate "input"/"output" with non-overlapping
+	// component counts that sum to "total".
+	for k, v := range usage.UsageDetails {
+		details[k] = v
+	}
 	return details
 }
 
@@ -646,15 +653,28 @@ func costDetails(usage model.Usage) map[string]any {
 	if usage.TotalCost != 0 {
 		details["total"] = usage.TotalCost
 	}
+	// Merge caller-supplied precomputed cost lines (USD). Keys override the
+	// fixed-field defaults on collision.
+	for k, v := range usage.CostDetails {
+		details[k] = v
+	}
 	return details
 }
 
 func hasCost(usage model.Usage) bool {
-	return usage.InputCost != 0 || usage.OutputCost != 0 || usage.TotalCost != 0
+	return usage.InputCost != 0 || usage.OutputCost != 0 || usage.TotalCost != 0 ||
+		len(usage.CostDetails) > 0
 }
 
+// isZeroUsage reports whether usage carries no token/cost signal at all. It
+// compares fields explicitly rather than with == because model.Usage now holds
+// map fields and is no longer comparable.
 func isZeroUsage(usage model.Usage) bool {
-	return usage == model.Usage{}
+	return usage.Input == 0 && usage.Output == 0 && usage.Total == 0 &&
+		usage.Unit == "" && usage.InputCost == 0 && usage.OutputCost == 0 &&
+		usage.TotalCost == 0 && usage.PromptTokens == 0 &&
+		usage.CompletionTokens == 0 && usage.TotalTokens == 0 &&
+		len(usage.UsageDetails) == 0 && len(usage.CostDetails) == 0
 }
 
 func coalesceTime(current *time.Time, candidate *time.Time) *time.Time {
